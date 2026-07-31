@@ -1,0 +1,28 @@
+# Postgres + pgvector for the knowledge assistant.
+#
+# Host port 5434 is used deliberately: 5432 (postgres-sql-bsn) and 5433
+# (verifymatch) are already bound on this machine. Change the left-hand side of
+# the port mapping if 5434 is also busy, and update DATABASE_URL to match.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: ika-postgres
+    environment:
+      POSTGRES_USER: ika
+      POSTGRES_PASSWORD: ika
+      POSTGRES_DB: ika
+    ports:
+      - "5434:5432"
+    volumes:
+      - ika_pgdata:/var/lib/postgresql/data
+      # Everything in db/init runs once, in filename order, on first boot of a
+      # fresh volume. Enables the vector extension and creates the schema.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ika -d ika"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ika_pgdata:

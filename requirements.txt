@@ -1,0 +1,16 @@
+# --- Web / API ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# --- Data / storage ---
+asyncpg==0.30.0
+pgvector==0.3.6
+
+# --- AWS Bedrock (embeddings + Claude generation) ---
+boto3==1.35.90
+botocore==1.35.90
+
+# --- Ingestion helpers ---
+tiktoken==0.8.0
