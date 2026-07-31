@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from fastapi import Request
 
+from app.agent.service import AgentService
 from app.db.repository import Repository
 from app.rag.service import RagService
 
@@ -20,3 +21,7 @@ def get_repository(request: Request) -> Repository:
 
 def get_rag_service(request: Request) -> RagService:
     return request.app.state.rag_service
+
+
+def get_agent_service(request: Request) -> AgentService:
+    return request.app.state.agent_service

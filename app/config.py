@@ -45,9 +45,15 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 1024
     llm_temperature: float = 0.0
 
+    # --- Agent ---
+    # Upper bound on tool-call rounds before the agent must answer. Prevents an
+    # unbounded tool loop; generous enough for multi-part questions.
+    max_agent_steps: int = 5
+
     # --- App ---
     log_level: str = "INFO"
     corpus_dir: str = "corpus"
+    directory_path: str = "data/directory.json"
 
 
 @lru_cache

@@ -8,27 +8,16 @@ actually used, not merely from what was retrieved.
 
 from __future__ import annotations
 
-import re
 import time
 
 from app.config import Settings
 from app.models.schemas import Citation, QueryResponse
 from app.rag import prompts
+from app.rag.citations import cited_markers as _cited_markers
 from app.rag.llm import generate
 from app.rag.retriever import Retriever
 
-_MARKER_RE = re.compile(r"\[(\d{1,2})\]")
 _SNIPPET_MAX_CHARS = 600
-
-
-def _cited_markers(answer: str, n_sources: int) -> list[int]:
-    """Extract distinct, in-range [n] markers in order of first appearance."""
-    seen: list[int] = []
-    for m in _MARKER_RE.finditer(answer):
-        n = int(m.group(1))
-        if 1 <= n <= n_sources and n not in seen:
-            seen.append(n)
-    return seen
 
 
 class RagService:

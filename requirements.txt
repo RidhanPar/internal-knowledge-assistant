@@ -12,5 +12,12 @@ pgvector==0.3.6
 boto3==1.35.90
 botocore==1.35.90
 
+# --- Agentic orchestration ---
+# LangGraph provides the state-machine loop. We do NOT use its LLM wrappers;
+# the Bedrock Converse transport is our own (app/rag/llm.py), so the model call
+# stays a pure config switch. langchain-core is a transitive dependency.
+langgraph==0.3.34
+langchain-core==0.3.86
+
 # --- Ingestion helpers ---
 tiktoken==0.8.0

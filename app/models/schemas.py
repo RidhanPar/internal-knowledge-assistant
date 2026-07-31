@@ -21,15 +21,24 @@ class QueryRequest(BaseModel):
 
 
 class Citation(BaseModel):
-    """A source chunk the answer is grounded in."""
+    """A source the answer is grounded in.
+
+    Covers both document chunks (from `search_documents`) and structured records
+    (from `lookup_directory`), distinguished by `source_type`. `similarity` is
+    populated only for document sources, where it is the cosine similarity to the
+    query (0..1).
+    """
 
     marker: int = Field(..., description="The [n] marker used inline in the answer.")
+    source_type: str = Field(default="document", description="'document' | 'directory'")
     document_id: str
     document_title: str
-    heading_path: str | None
+    heading_path: str | None = None
     source_path: str
-    similarity: float = Field(..., description="Cosine similarity to the query, 0..1.")
-    snippet: str = Field(..., description="The retrieved chunk text (possibly truncated).")
+    similarity: float | None = Field(
+        default=None, description="Cosine similarity to the query, 0..1 (documents only)."
+    )
+    snippet: str = Field(..., description="The source text (possibly truncated).")
 
 
 class QueryResponse(BaseModel):
@@ -43,6 +52,10 @@ class QueryResponse(BaseModel):
     model_id: str
     retrieved_count: int
     latency_ms: int
+    # Human-readable trace of the agent's tool calls, in order. Empty for the
+    # single-shot (/query/simple) path. Exposes *what the agent did* so a caller
+    # can see the reasoning steps, not just the final answer.
+    steps: list[str] = Field(default_factory=list)
 
 
 class HealthResponse(BaseModel):

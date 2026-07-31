@@ -1,0 +1,74 @@
+[
+  {
+    "id": "security",
+    "team": "Security",
+    "aliases": ["security", "infosec", "incident", "breach", "phishing", "vulnerability", "ciso"],
+    "owner": "Dana Whitfield (Security Lead)",
+    "contact_channel": "#security-incidents",
+    "email": "security@meridian.example",
+    "escalation": "On-call security engineer -> Security Lead (Dana Whitfield) -> CISO (Priya Nair)",
+    "on_call": "24/7 rotation; page via #security-incidents",
+    "location": "Remote-first",
+    "notes": "Own the Information Security Policy and incident response for security events."
+  },
+  {
+    "id": "it-helpdesk",
+    "team": "IT Service Desk",
+    "aliases": ["it", "helpdesk", "service desk", "laptop", "hardware", "password reset", "software install", "wifi"],
+    "owner": "Marcus Lindqvist (IT Manager)",
+    "contact_channel": "#it-help",
+    "email": "it@meridian.example",
+    "escalation": "Service desk -> IT Manager (Marcus Lindqvist)",
+    "on_call": "Staffed 08:00-18:00 UK on working days; production issues go via engineering on-call",
+    "location": "Remote-first",
+    "notes": "Hardware, accounts, software catalogue, and workplace IT."
+  },
+  {
+    "id": "people-ops",
+    "team": "People Operations",
+    "aliases": ["hr", "people", "people ops", "leave", "benefits", "payroll", "onboarding", "ethics", "conduct"],
+    "owner": "Sofia Alvarez (Head of People)",
+    "contact_channel": "#people-ops",
+    "email": "people@meridian.example",
+    "escalation": "People Ops partner -> Head of People (Sofia Alvarez)",
+    "on_call": "Business hours only",
+    "location": "Remote-first",
+    "notes": "Owns the Employee Handbook, benefits, payroll, and the ethics line (ethics@meridian.example)."
+  },
+  {
+    "id": "payments-platform",
+    "team": "Payments Platform",
+    "aliases": ["payments", "platform", "billing", "checkout", "payments platform", "direct debit"],
+    "owner": "Tom Becker (Engineering Manager)",
+    "contact_channel": "#team-payments",
+    "email": "payments-eng@meridian.example",
+    "escalation": "Payments on-call -> Payments EM (Tom Becker) -> VP Engineering (Rachel Osei)",
+    "on_call": "Engineering on-call rotation; see on-call entry",
+    "location": "Remote-first",
+    "notes": "Owns the payments services and their production runbooks."
+  },
+  {
+    "id": "on-call",
+    "team": "Engineering On-Call",
+    "aliases": ["on-call", "on call", "oncall", "pager", "incident commander", "escalation"],
+    "owner": "Rotation managed in the incident tool",
+    "contact_channel": "#incidents",
+    "email": "oncall@meridian.example",
+    "escalation": "Primary on-call -> Secondary on-call -> Incident Commander (for SEV1)",
+    "on_call": "This week (example): Primary = Aisha Khan, Secondary = Leon Fischer. Weeks run Monday to Monday.",
+    "location": "Remote-first",
+    "notes": "Declare incidents with /incident in #incidents. See the Incident Response Runbook for severity levels and roles."
+  },
+  {
+    "id": "offices",
+    "team": "Offices / Hubs",
+    "aliases": ["office", "offices", "hub", "hubs", "location", "address", "london", "berlin", "austin"],
+    "owner": "Workplace team",
+    "contact_channel": "#workplace",
+    "email": "workplace@meridian.example",
+    "escalation": "Workplace team",
+    "on_call": "N/A",
+    "location": "London: 40 Rivergate, EC4 (UK). Berlin: Torstrasse 120, 10119 (DE). Austin: 600 Congress Ave, TX 78701 (US).",
+    "notes": "Remote-first; hubs are optional drop-in spaces. No mandated office days."
+  }
+]

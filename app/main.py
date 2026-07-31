@@ -13,6 +13,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import __version__
+from app.agent.directory import DirectoryService
+from app.agent.graph import KnowledgeAgent
+from app.agent.service import AgentService
 from app.api import routes_health, routes_query
 from app.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
@@ -32,10 +35,13 @@ async def lifespan(app: FastAPI):
     pool = await create_pool(settings)
     repository = Repository(pool)
     retriever = Retriever(repository, settings)
+    directory = DirectoryService.from_json(settings.directory_path)
+    agent = KnowledgeAgent(retriever, directory)
 
     app.state.pool = pool
     app.state.repository = repository
     app.state.rag_service = RagService(retriever, settings)
+    app.state.agent_service = AgentService(agent, settings)
     logger.info("startup complete")
     try:
         yield
