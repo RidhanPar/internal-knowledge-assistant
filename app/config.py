@@ -52,8 +52,13 @@ class Settings(BaseSettings):
 
     # --- App ---
     log_level: str = "INFO"
+    # Emit one JSON object per log line. Turn on in deployment so a log
+    # aggregator can index the fields; leave off locally for readable text.
+    json_logs: bool = False
     corpus_dir: str = "corpus"
     directory_path: str = "data/directory.json"
+    # Port the API listens on. App Runner and most container platforms set PORT.
+    port: int = 8080
 
 
 @lru_cache

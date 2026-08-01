@@ -1,9 +1,10 @@
 """FastAPI application factory and lifespan wiring.
 
-Startup builds the shared resources once — the asyncpg pool, the repository, and
-the RAG service — and stashes them on `app.state`. The lifespan context guarantees
-the pool is closed cleanly on shutdown. Constructing the app in a factory keeps it
-importable by tests without side effects at import time.
+Startup builds the shared resources once (the asyncpg pool, the repository, the
+retriever, the directory, and the two answer services) and stores them on
+`app.state`. The lifespan context closes the pool cleanly on shutdown. Building
+the app in a factory keeps it importable by tests without side effects at import
+time.
 """
 
 from __future__ import annotations
@@ -17,7 +18,9 @@ from app.agent.directory import DirectoryService
 from app.agent.graph import KnowledgeAgent
 from app.agent.service import AgentService
 from app.api import routes_health, routes_query
+from app.api.middleware import RequestContextMiddleware
 from app.config import Settings, get_settings
+from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.db.pool import create_pool
 from app.db.repository import Repository
@@ -30,7 +33,6 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings: Settings = app.state.settings
-    configure_logging(settings.log_level)
     logger.info("starting up: connecting to database")
     pool = await create_pool(settings)
     repository = Repository(pool)
@@ -52,6 +54,10 @@ async def lifespan(app: FastAPI):
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    # Configure logging at construction so startup and import-time logs are
+    # formatted consistently, not only after the lifespan runs.
+    configure_logging(settings.log_level, json_logs=settings.json_logs)
+
     app = FastAPI(
         title="Internal Knowledge Assistant",
         version=__version__,
@@ -59,6 +65,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.add_middleware(RequestContextMiddleware)
+    register_exception_handlers(app)
     app.include_router(routes_health.router)
     app.include_router(routes_query.router)
     return app

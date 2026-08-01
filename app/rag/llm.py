@@ -13,7 +13,10 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 from app.config import get_settings
+from app.core.errors import UpstreamError
 from app.rag.bedrock import get_bedrock_runtime
 
 
@@ -28,15 +31,18 @@ class LLMResult:
 def _converse_sync(system_prompt: str, user_prompt: str) -> LLMResult:
     settings = get_settings()
     client = get_bedrock_runtime()
-    resp = client.converse(
-        modelId=settings.bedrock_llm_model_id,
-        system=[{"text": system_prompt}],
-        messages=[{"role": "user", "content": [{"text": user_prompt}]}],
-        inferenceConfig={
-            "maxTokens": settings.llm_max_tokens,
-            "temperature": settings.llm_temperature,
-        },
-    )
+    try:
+        resp = client.converse(
+            modelId=settings.bedrock_llm_model_id,
+            system=[{"text": system_prompt}],
+            messages=[{"role": "user", "content": [{"text": user_prompt}]}],
+            inferenceConfig={
+                "maxTokens": settings.llm_max_tokens,
+                "temperature": settings.llm_temperature,
+            },
+        )
+    except (BotoCoreError, ClientError) as exc:
+        raise UpstreamError("bedrock-generation", str(exc)) from exc
     message = resp["output"]["message"]
     text = "".join(block.get("text", "") for block in message["content"]).strip()
     usage = resp.get("usage", {})
@@ -86,16 +92,19 @@ def _converse_with_tools_sync(
 ) -> ConverseResult:
     settings = get_settings()
     client = get_bedrock_runtime()
-    resp = client.converse(
-        modelId=settings.bedrock_llm_model_id,
-        system=[{"text": system_prompt}],
-        messages=messages,
-        toolConfig={"tools": tool_specs},
-        inferenceConfig={
-            "maxTokens": settings.llm_max_tokens,
-            "temperature": settings.llm_temperature,
-        },
-    )
+    try:
+        resp = client.converse(
+            modelId=settings.bedrock_llm_model_id,
+            system=[{"text": system_prompt}],
+            messages=messages,
+            toolConfig={"tools": tool_specs},
+            inferenceConfig={
+                "maxTokens": settings.llm_max_tokens,
+                "temperature": settings.llm_temperature,
+            },
+        )
+    except (BotoCoreError, ClientError) as exc:
+        raise UpstreamError("bedrock-generation", str(exc)) from exc
     message = resp["output"]["message"]
     text = "".join(
         block["text"] for block in message["content"] if "text" in block

@@ -17,7 +17,10 @@ from __future__ import annotations
 import asyncio
 import json
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 from app.config import get_settings
+from app.core.errors import UpstreamError
 from app.rag.bedrock import get_bedrock_runtime
 
 
@@ -31,12 +34,15 @@ def _embed_sync(text: str) -> list[float]:
             "normalize": True,
         }
     )
-    resp = client.invoke_model(
-        modelId=settings.bedrock_embedding_model_id,
-        body=body,
-        accept="application/json",
-        contentType="application/json",
-    )
+    try:
+        resp = client.invoke_model(
+            modelId=settings.bedrock_embedding_model_id,
+            body=body,
+            accept="application/json",
+            contentType="application/json",
+        )
+    except (BotoCoreError, ClientError) as exc:
+        raise UpstreamError("bedrock-embeddings", str(exc)) from exc
     payload = json.loads(resp["body"].read())
     return payload["embedding"]
 
