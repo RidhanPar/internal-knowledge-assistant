@@ -1,0 +1,151 @@
+[
+  {
+    "id": "leave-days",
+    "question": "How many days of annual leave do full-time employees get each year?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["employee-handbook"],
+    "answer_must_include": ["28"]
+  },
+  {
+    "id": "sick-leave-days",
+    "question": "How many paid sick days are employees entitled to per year?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["employee-handbook"],
+    "answer_must_include": ["10"]
+  },
+  {
+    "id": "parental-leave-primary",
+    "question": "How much paid parental leave does the primary caregiver receive?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["employee-handbook"],
+    "answer_must_include": ["26"]
+  },
+  {
+    "id": "probation-length",
+    "question": "How long is the probation period for new employees?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["employee-handbook"],
+    "answer_must_include": ["six"]
+  },
+  {
+    "id": "mfa-required",
+    "question": "Is multi-factor authentication required, and what second factor do engineers with production access need?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["security-policy"],
+    "answer_must_include": ["mandatory"]
+  },
+  {
+    "id": "password-length",
+    "question": "What is the minimum password length?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["security-policy"],
+    "answer_must_include": ["14"]
+  },
+  {
+    "id": "meal-cap-uk",
+    "question": "What is the daily meal cap when travelling in the UK?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["expense-and-travel-policy"],
+    "answer_must_include": ["60"]
+  },
+  {
+    "id": "learning-budget",
+    "question": "How much is the annual learning and development budget per employee?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["expense-and-travel-policy"],
+    "answer_must_include": ["1,500"]
+  },
+  {
+    "id": "referral-bonus",
+    "question": "How much is the employee referral bonus and when is it paid?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["benefits-and-compensation"],
+    "answer_must_include": ["2,000"]
+  },
+  {
+    "id": "sev1-postmortem",
+    "question": "How soon after a SEV1 incident must a postmortem be completed?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["incident-response-runbook"],
+    "answer_must_include": ["five"]
+  },
+  {
+    "id": "deploy-process",
+    "question": "What happens automatically when an engineer merges to main?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["engineering-onboarding"],
+    "answer_must_include": ["staging"]
+  },
+  {
+    "id": "lost-laptop",
+    "question": "What should I do if I lose my laptop?",
+    "category": "policy",
+    "expected_no_answer": false,
+    "relevant_doc_ids": ["it-support-faq", "security-policy"],
+    "answer_must_include": ["security"]
+  },
+  {
+    "id": "security-contact",
+    "question": "Who do I contact and which channel do I use to report a security incident?",
+    "category": "directory",
+    "expected_no_answer": false,
+    "relevant_doc_ids": [],
+    "relevant_directory_ids": ["security"],
+    "answer_must_include": ["#security-incidents"]
+  },
+  {
+    "id": "oncall-escalation",
+    "question": "What is the on-call escalation path for engineering incidents?",
+    "category": "directory",
+    "expected_no_answer": false,
+    "relevant_doc_ids": [],
+    "relevant_directory_ids": ["on-call"],
+    "answer_must_include": ["Incident Commander"]
+  },
+  {
+    "id": "share-price",
+    "question": "What was Meridian's share price yesterday?",
+    "category": "unanswerable",
+    "expected_no_answer": true,
+    "relevant_doc_ids": []
+  },
+  {
+    "id": "vpn-vendor",
+    "question": "Which VPN vendor does Meridian use?",
+    "category": "unanswerable",
+    "expected_no_answer": true,
+    "relevant_doc_ids": []
+  },
+  {
+    "id": "dental-provider",
+    "question": "Who is Meridian's dental insurance provider?",
+    "category": "unanswerable",
+    "expected_no_answer": true,
+    "relevant_doc_ids": []
+  },
+  {
+    "id": "contractor-leave",
+    "question": "How many annual leave days do external contractors get?",
+    "category": "unanswerable",
+    "expected_no_answer": true,
+    "relevant_doc_ids": []
+  },
+  {
+    "id": "office-parking",
+    "question": "How many parking spaces does the Berlin office have?",
+    "category": "unanswerable",
+    "expected_no_answer": true,
+    "relevant_doc_ids": []
+  }
+]
