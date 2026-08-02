@@ -47,7 +47,7 @@ cannot find support, it says so.
       "snippet": "..."
     }
   ],
-  "model_id": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
   "retrieved_count": 4,
   "latency_ms": 1120,
   "steps": ["search_documents(query='multi-factor authentication requirement') -> 4 passage(s)"]

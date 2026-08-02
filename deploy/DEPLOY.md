@@ -190,7 +190,7 @@ cat > /tmp/apprunner.json <<JSON
           "AWS_REGION": "$AWS_REGION",
           "JSON_LOGS": "true",
           "DATABASE_URL": "postgresql://ika:REPLACE_WITH_A_STRONG_PASSWORD@$DB_HOST:5432/ika",
-          "BEDROCK_LLM_MODEL_ID": "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+          "BEDROCK_LLM_MODEL_ID": "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
         }
       }
     }
