@@ -8,9 +8,9 @@ variable "region" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance size. t3.medium (4 GB) fits the local embedding model plus Postgres."
+  description = "EC2 instance size. c7i-flex.large (4 GB) fits the local embedding model plus Postgres and is on this account's allowed (free-tier-eligible) set."
   type        = string
-  default     = "t3.medium"
+  default     = "c7i-flex.large"
 }
 
 variable "project_name" {
