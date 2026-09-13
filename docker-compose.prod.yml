@@ -1,0 +1,41 @@
+# Production compose: the API and the database on one host.
+#
+# Used by the EC2 deploy (see deploy/terraform). The API image is built from the
+# Dockerfile in this repo. The database is pgvector, with the schema applied
+# automatically from db/init on first boot.
+#
+# Secrets and the model settings come from a .env file the instance writes at
+# boot (ANTHROPIC_API_KEY, ANTHROPIC_WORKSPACE_ID, and so on). DATABASE_URL is
+# set here so the app reaches the db container by service name; an environment
+# value takes precedence over the .env file.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ika
+      POSTGRES_PASSWORD: ika
+      POSTGRES_DB: ika
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ika -d ika"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://ika:ika@db:5432/ika
+    ports:
+      - "80:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

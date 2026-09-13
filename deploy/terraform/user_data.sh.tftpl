@@ -1,0 +1,43 @@
+#!/bin/bash
+# Runs once at first boot (cloud-init). Installs Docker, fetches the app, writes
+# the environment file, and starts the stack. Logs go to /var/log/cloud-init-output.log.
+set -xe
+
+dnf update -y
+dnf install -y docker git
+systemctl enable --now docker
+
+# Install the docker compose v2 plugin (not bundled on AL2023).
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Fetch the application code.
+git clone ${repo_url} /opt/app
+cd /opt/app
+
+# Write the environment file the app reads. Single-quoted heredoc so the shell
+# does not expand anything; Terraform has already substituted the values.
+cat > /opt/app/.env <<'ENVEOF'
+ANTHROPIC_API_KEY=${anthropic_api_key}
+ANTHROPIC_WORKSPACE_ID=${anthropic_workspace_id}
+ANTHROPIC_MODEL=${anthropic_model}
+EMBEDDING_MODEL_NAME=BAAI/bge-base-en-v1.5
+EMBEDDING_DIM=768
+JSON_LOGS=true
+ENVEOF
+
+# Build and start the app and database.
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Wait for the database to accept connections, then ingest the corpus once.
+for i in $(seq 1 30); do
+  if docker compose -f docker-compose.prod.yml exec -T db pg_isready -U ika -d ika; then
+    break
+  fi
+  sleep 5
+done
+docker compose -f docker-compose.prod.yml run --rm app python -m scripts.ingest
+
+echo "deploy complete"
