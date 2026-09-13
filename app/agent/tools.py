@@ -1,4 +1,4 @@
-"""The agent's tools: their Bedrock Converse specs and their executors.
+"""The agent's tools: their Anthropic tool specs and their executors.
 
 A "source" is the unifying abstraction across both tools: every fact the agent
 can cite — whether a document chunk or a directory record — becomes a `Source`
@@ -17,56 +17,48 @@ from app.rag.retriever import Retriever
 
 _SNIPPET_MAX_CHARS = 600
 
-# --- Tool specs (Bedrock Converse `toolConfig.tools` shape) ------------------
+# --- Tool specs (Anthropic Messages API `tools` shape) -----------------------
 
 SEARCH_TOOL_SPEC = {
-    "toolSpec": {
-        "name": "search_documents",
-        "description": (
-            "Search the internal company documents — the employee handbook, "
-            "security policy, engineering onboarding, expense & travel policy, "
-            "benefits, incident runbook, and IT FAQ — for passages relevant to a "
-            "question. Use this for anything about policy, rules, benefits, "
-            "process, or 'how do I' questions. Returns numbered source passages."
-        ),
-        "inputSchema": {
-            "json": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "A focused natural-language search query.",
-                    }
-                },
-                "required": ["query"],
+    "name": "search_documents",
+    "description": (
+        "Search the internal company documents (the employee handbook, security "
+        "policy, engineering onboarding, expense and travel policy, benefits, "
+        "incident runbook, and IT FAQ) for passages relevant to a question. Use "
+        "this for anything about policy, rules, benefits, process, or how-to "
+        "questions. Returns numbered source passages."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "A focused natural-language search query.",
             }
         },
-    }
+        "required": ["query"],
+    },
 }
 
 DIRECTORY_TOOL_SPEC = {
-    "toolSpec": {
-        "name": "lookup_directory",
-        "description": (
-            "Look up structured organisational facts that are NOT in the policy "
-            "documents: which team owns a topic, the contact channel and email, "
-            "the escalation path, who is on call, and office locations. Use this "
-            "for 'who do I contact', 'which team', 'what channel', 'who is on "
-            "call', or office-address questions."
-        ),
-        "inputSchema": {
-            "json": {
-                "type": "object",
-                "properties": {
-                    "topic": {
-                        "type": "string",
-                        "description": "A team name or topic keyword, e.g. 'security', 'IT', 'payments', 'on-call', 'offices'.",
-                    }
-                },
-                "required": ["topic"],
+    "name": "lookup_directory",
+    "description": (
+        "Look up structured organisational facts that are NOT in the policy "
+        "documents: which team owns a topic, the contact channel and email, the "
+        "escalation path, who is on call, and office locations. Use this for "
+        "who-to-contact, which-team, what-channel, who-is-on-call, or "
+        "office-address questions."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "topic": {
+                "type": "string",
+                "description": "A team name or topic keyword, e.g. 'security', 'IT', 'payments', 'on-call', 'offices'.",
             }
         },
-    }
+        "required": ["topic"],
+    },
 }
 
 TOOL_SPECS = [SEARCH_TOOL_SPEC, DIRECTORY_TOOL_SPEC]

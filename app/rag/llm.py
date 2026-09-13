@@ -1,23 +1,48 @@
-"""Claude generation via the Bedrock Converse API.
+"""Claude generation via the Anthropic API (direct).
 
-We use `converse` rather than raw `invoke_model` because it is model-agnostic
-(the same call shape works across Claude versions and even other providers),
-which keeps BEDROCK_LLM_MODEL_ID a pure configuration switch.
+We call the Anthropic Messages API rather than Bedrock. It is the same Claude
+model family, reached directly with an API key, which avoids the AWS account
+authorization that blocked Bedrock.
 
-Generation runs at temperature 0: for grounded, cited answers we want the most
-faithful, least creative response, and reproducibility during evaluation.
+The Claude 5-era API does not expose a temperature setting (it was removed in
+favour of effort levels). For grounded, cited answers we rely on a strict system
+prompt and short, extraction-style outputs rather than a temperature knob.
+
+The API is used two ways:
+- `generate`: a single system + user turn, for the single-shot answer path and
+  the evaluation judge.
+- `converse_with_tools`: a multi-turn loop where the model may return tool_use
+  blocks instead of a final answer. The agent runs the tools and feeds
+  tool_result blocks back in. We keep the raw assistant message so it can be
+  appended verbatim to the running conversation.
 """
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
+from functools import lru_cache
 
-from botocore.exceptions import BotoCoreError, ClientError
+import anthropic
 
 from app.config import get_settings
 from app.core.errors import UpstreamError
-from app.rag.bedrock import get_bedrock_runtime
+
+
+@lru_cache
+def _client() -> anthropic.AsyncAnthropic:
+    settings = get_settings()
+    # An organization-scoped key needs the workspace id in a header. A
+    # workspace-scoped key does not, so we only send it when configured.
+    headers = (
+        {"anthropic-workspace-id": settings.anthropic_workspace_id}
+        if settings.anthropic_workspace_id
+        else None
+    )
+    # Passing None lets the SDK fall back to the ANTHROPIC_API_KEY env var.
+    return anthropic.AsyncAnthropic(
+        api_key=settings.anthropic_api_key or None,
+        default_headers=headers,
+    )
 
 
 @dataclass
@@ -28,45 +53,31 @@ class LLMResult:
     stop_reason: str
 
 
-def _converse_sync(system_prompt: str, user_prompt: str) -> LLMResult:
-    settings = get_settings()
-    client = get_bedrock_runtime()
-    try:
-        resp = client.converse(
-            modelId=settings.bedrock_llm_model_id,
-            system=[{"text": system_prompt}],
-            messages=[{"role": "user", "content": [{"text": user_prompt}]}],
-            inferenceConfig={
-                "maxTokens": settings.llm_max_tokens,
-                "temperature": settings.llm_temperature,
-            },
-        )
-    except (BotoCoreError, ClientError) as exc:
-        raise UpstreamError("bedrock-generation", str(exc)) from exc
-    message = resp["output"]["message"]
-    text = "".join(block.get("text", "") for block in message["content"]).strip()
-    usage = resp.get("usage", {})
-    return LLMResult(
-        text=text,
-        input_tokens=usage.get("inputTokens", 0),
-        output_tokens=usage.get("outputTokens", 0),
-        stop_reason=resp.get("stopReason", ""),
-    )
+def _text_from(content) -> str:
+    return "".join(block.text for block in content if block.type == "text").strip()
 
 
 async def generate(system_prompt: str, user_prompt: str) -> LLMResult:
-    return await asyncio.to_thread(_converse_sync, system_prompt, user_prompt)
+    settings = get_settings()
+    try:
+        resp = await _client().messages.create(
+            model=settings.anthropic_model,
+            max_tokens=settings.llm_max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+    except anthropic.APIError as exc:
+        raise UpstreamError("anthropic-generation", str(exc)) from exc
+    return LLMResult(
+        text=_text_from(resp.content),
+        input_tokens=resp.usage.input_tokens,
+        output_tokens=resp.usage.output_tokens,
+        stop_reason=resp.stop_reason or "",
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Tool-using conversation (for the agentic layer)
-#
-# The Converse API exposes provider-agnostic tool use: we pass tool specs, and
-# Claude may respond with `toolUse` blocks and stopReason == "tool_use" instead
-# of a final answer. The caller runs the tools and feeds `toolResult` blocks
-# back in. We keep the raw assistant message so it can be appended verbatim to
-# the running message list — that round-trip fidelity is what makes multi-step
-# tool loops work.
+# Tool-using conversation (the agentic layer)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -87,47 +98,37 @@ class ConverseResult:
     output_tokens: int
 
 
-def _converse_with_tools_sync(
-    system_prompt: str, messages: list[dict], tool_specs: list[dict]
-) -> ConverseResult:
-    settings = get_settings()
-    client = get_bedrock_runtime()
-    try:
-        resp = client.converse(
-            modelId=settings.bedrock_llm_model_id,
-            system=[{"text": system_prompt}],
-            messages=messages,
-            toolConfig={"tools": tool_specs},
-            inferenceConfig={
-                "maxTokens": settings.llm_max_tokens,
-                "temperature": settings.llm_temperature,
-            },
-        )
-    except (BotoCoreError, ClientError) as exc:
-        raise UpstreamError("bedrock-generation", str(exc)) from exc
-    message = resp["output"]["message"]
-    text = "".join(
-        block["text"] for block in message["content"] if "text" in block
-    ).strip()
-    tool_uses = [
-        ToolUse(id=b["toolUse"]["toolUseId"], name=b["toolUse"]["name"], input=b["toolUse"].get("input", {}))
-        for b in message["content"]
-        if "toolUse" in b
-    ]
-    usage = resp.get("usage", {})
-    return ConverseResult(
-        text=text,
-        tool_uses=tool_uses,
-        stop_reason=resp.get("stopReason", ""),
-        raw_message=message,
-        input_tokens=usage.get("inputTokens", 0),
-        output_tokens=usage.get("outputTokens", 0),
-    )
-
-
 async def converse_with_tools(
     system_prompt: str, messages: list[dict], tool_specs: list[dict]
 ) -> ConverseResult:
-    return await asyncio.to_thread(
-        _converse_with_tools_sync, system_prompt, messages, tool_specs
+    settings = get_settings()
+    try:
+        resp = await _client().messages.create(
+            model=settings.anthropic_model,
+            max_tokens=settings.llm_max_tokens,
+            system=system_prompt,
+            messages=messages,
+            tools=tool_specs,
+        )
+    except anthropic.APIError as exc:
+        raise UpstreamError("anthropic-generation", str(exc)) from exc
+
+    tool_uses = [
+        ToolUse(id=b.id, name=b.name, input=b.input)
+        for b in resp.content
+        if b.type == "tool_use"
+    ]
+    # Rebuild the assistant message as plain dicts so it can be appended to the
+    # message list and sent back on the next turn.
+    raw_message = {
+        "role": "assistant",
+        "content": [b.model_dump() for b in resp.content],
+    }
+    return ConverseResult(
+        text=_text_from(resp.content),
+        tool_uses=tool_uses,
+        stop_reason=resp.stop_reason or "",
+        raw_message=raw_message,
+        input_tokens=resp.usage.input_tokens,
+        output_tokens=resp.usage.output_tokens,
     )

@@ -1,64 +1,55 @@
-"""Embedding via Amazon Titan Text Embeddings v2 on Bedrock.
+"""Embeddings via a local sentence-transformers model (bge-base-en-v1.5).
 
-Why Titan v2:
-- Native to Bedrock, so no extra vendor / key to manage alongside Claude.
-- Configurable output dimension (256/512/1024). We use 1024 for headroom on a
-  heterogeneous internal corpus; smaller dims would cut storage/latency if the
-  corpus were narrow.
-- Returns L2-normalised vectors (`normalize=true`), so cosine distance in
-  pgvector is directly interpretable as `similarity = 1 - distance`.
+Why a local model:
+- No extra vendor or API key, and the document text never leaves the server,
+  which is the right default for internal documents.
+- Free to run and reproducible: the same model file gives the same vectors.
+- bge-base-en-v1.5 is a strong open embedding model at 768 dimensions, small
+  enough to run on CPU.
 
-Titan embeds a single input per request, so batch embedding is fan-out with
-bounded concurrency to respect account throttling limits.
+Cost of the choice: it pulls in PyTorch and needs about 1 GB of memory, so the
+host must be sized for it. The call sits behind `embed_query` and `embed_texts`,
+so swapping to a hosted embedding model later is a change to this one file plus a
+re-index.
+
+Asymmetric search detail: bge models retrieve better when the query carries a
+short instruction prefix and the stored passages do not. We add that prefix to
+queries only, which matches how the model was trained.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
+from functools import lru_cache
 
-from botocore.exceptions import BotoCoreError, ClientError
+from sentence_transformers import SentenceTransformer
 
 from app.config import get_settings
-from app.core.errors import UpstreamError
-from app.rag.bedrock import get_bedrock_runtime
+
+# Recommended query instruction for bge-*-en-v1.5. Applied to queries only.
+_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 
-def _embed_sync(text: str) -> list[float]:
+@lru_cache
+def _model() -> SentenceTransformer:
+    """Load the model once per process. The first call downloads and caches it."""
     settings = get_settings()
-    client = get_bedrock_runtime()
-    body = json.dumps(
-        {
-            "inputText": text,
-            "dimensions": settings.embedding_dim,
-            "normalize": True,
-        }
-    )
-    try:
-        resp = client.invoke_model(
-            modelId=settings.bedrock_embedding_model_id,
-            body=body,
-            accept="application/json",
-            contentType="application/json",
-        )
-    except (BotoCoreError, ClientError) as exc:
-        raise UpstreamError("bedrock-embeddings", str(exc)) from exc
-    payload = json.loads(resp["body"].read())
-    return payload["embedding"]
+    return SentenceTransformer(settings.embedding_model_name)
+
+
+def _encode(texts: list[str]) -> list[list[float]]:
+    # normalize_embeddings=True returns unit vectors, so cosine distance in
+    # pgvector maps to similarity = 1 - distance.
+    vectors = _model().encode(texts, normalize_embeddings=True, batch_size=32)
+    return [v.tolist() for v in vectors]
 
 
 async def embed_query(text: str) -> list[float]:
-    """Embed a single query string."""
-    return await asyncio.to_thread(_embed_sync, text)
+    """Embed one query. Encoding is CPU-bound, so run it off the event loop."""
+    vectors = await asyncio.to_thread(_encode, [_QUERY_PREFIX + text])
+    return vectors[0]
 
 
 async def embed_texts(texts: list[str]) -> list[list[float]]:
-    """Embed many texts with bounded concurrency, preserving input order."""
-    settings = get_settings()
-    semaphore = asyncio.Semaphore(settings.embedding_concurrency)
-
-    async def _one(t: str) -> list[float]:
-        async with semaphore:
-            return await asyncio.to_thread(_embed_sync, t)
-
-    return await asyncio.gather(*(_one(t) for t in texts))
+    """Embed many passages (no query prefix), preserving input order."""
+    return await asyncio.to_thread(_encode, texts)

@@ -4,10 +4,10 @@
 -- Runs once on first boot of a fresh Postgres volume (docker-entrypoint-initdb).
 -- To re-run after edits: `docker compose down -v` (drops the volume) then `up`.
 --
--- IMPORTANT: the vector(1024) dimension below must match EMBEDDING_DIM in .env.
--- Titan Text Embeddings v2 emits 1024 dims by default. Switching embedding
--- model or dimension requires altering this column and rebuilding the HNSW
--- index — there is no automatic migration.
+-- IMPORTANT: the vector(768) dimension below must match EMBEDDING_DIM in .env.
+-- bge-base-en-v1.5 emits 768 dims. Switching embedding model or dimension
+-- requires altering this column and rebuilding the HNSW index. There is no
+-- automatic migration.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     heading_path TEXT,                          -- e.g. "Security Policy > Access Control > MFA"
     content      TEXT      NOT NULL,
     token_count  INT,
-    embedding    vector(1024) NOT NULL,
+    embedding    vector(768) NOT NULL,
     UNIQUE (document_id, chunk_index)
 );
 

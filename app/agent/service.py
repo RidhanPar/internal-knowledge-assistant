@@ -40,7 +40,7 @@ class AgentService:
         started = time.perf_counter()
         initial: dict = {
             "question": question,
-            "messages": [{"role": "user", "content": [{"text": question}]}],
+            "messages": [{"role": "user", "content": question}],
             "sources": [],
             "steps": [],
             "iterations": 0,
@@ -62,7 +62,7 @@ class AgentService:
             answer=final.get("final_text", ""),
             no_answer=bool(final.get("no_answer", True)),
             citations=citations,
-            model_id=self._settings.bedrock_llm_model_id,
+            model_id=self._settings.anthropic_model,
             retrieved_count=len(sources),
             latency_ms=int((time.perf_counter() - started) * 1000),
             steps=final.get("steps", []),

@@ -28,22 +28,28 @@ class Settings(BaseSettings):
     db_pool_min_size: int = 1
     db_pool_max_size: int = 10
 
-    # --- AWS Bedrock ---
-    aws_region: str = "us-east-1"
-    bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
-    embedding_dim: int = 1024
-    bedrock_llm_model_id: str = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+    # --- Embeddings (local sentence-transformers) ---
+    # bge-base-en-v1.5 emits 768-dim vectors. This value MUST match the vector
+    # column size in db/init/001_schema.sql. Changing the model means a re-index.
+    embedding_model_name: str = "BAAI/bge-base-en-v1.5"
+    embedding_dim: int = 768
 
-    # Bounded concurrency for embedding calls during ingestion. Titan embeds one
-    # input per request; this caps in-flight Bedrock calls to stay under account
-    # throttling limits.
-    embedding_concurrency: int = 8
+    # --- Generation (Anthropic API) ---
+    # The SDK also reads ANTHROPIC_API_KEY from the environment; this field lets
+    # it come from a .env file too. Never hardcode the key.
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-5"
+    # Only needed if the API key is organization-scoped rather than
+    # workspace-scoped. Leave blank when using a workspace-scoped key.
+    anthropic_workspace_id: str = ""
 
     # --- Retrieval / generation ---
     retrieval_top_k: int = 6
-    retrieval_min_similarity: float = 0.30
+    # Minimum cosine similarity for a chunk to count as evidence. bge-base scores
+    # real matches around 0.7 and unrelated text around 0.3, so 0.40 cleanly
+    # separates them. Tuned against the evaluation set in Phase 3.
+    retrieval_min_similarity: float = 0.40
     llm_max_tokens: int = 1024
-    llm_temperature: float = 0.0
 
     # --- Agent ---
     # Upper bound on tool-call rounds before the agent must answer. Prevents an

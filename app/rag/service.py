@@ -36,7 +36,7 @@ class RagService:
                 answer=prompts.NO_ANSWER_SENTINEL,
                 no_answer=True,
                 citations=[],
-                model_id=self._settings.bedrock_llm_model_id,
+                model_id=self._settings.anthropic_model,
                 retrieved_count=len(outcome.retrieved),
                 latency_ms=int((time.perf_counter() - started) * 1000),
             )
@@ -70,7 +70,7 @@ class RagService:
             answer=result.text,
             no_answer=no_answer,
             citations=citations,
-            model_id=self._settings.bedrock_llm_model_id,
+            model_id=self._settings.anthropic_model,
             retrieved_count=len(outcome.retrieved),
             latency_ms=int((time.perf_counter() - started) * 1000),
         )

@@ -1,11 +1,10 @@
-"""Verify Bedrock access before running ingestion or the API.
+"""Verify the models are reachable before ingesting or running the API.
 
-Makes one small embedding call and one small Converse call using the model IDs
-from your .env, and reports dimensions/latency. Run this first to confirm your
-AWS credentials, region, and — importantly — that you have *enabled model
-access* for both models in the Bedrock console.
+Loads the local embedding model and makes one small Anthropic call, then reports
+the embedding dimension and the reply. Run this first to confirm the embedding
+model downloads and that ANTHROPIC_API_KEY works.
 
-    py -3.11 -m scripts.check_bedrock
+    py -3.11 -m scripts.check_models
 """
 
 from __future__ import annotations
@@ -20,9 +19,8 @@ from app.rag.llm import generate
 
 async def _run() -> None:
     s = get_settings()
-    print(f"region={s.aws_region}")
-    print(f"embedding_model={s.bedrock_embedding_model_id}")
-    print(f"llm_model={s.bedrock_llm_model_id}\n")
+    print(f"embedding_model={s.embedding_model_name}")
+    print(f"anthropic_model={s.anthropic_model}\n")
 
     t0 = time.perf_counter()
     vec = await embed_query("hello world")
@@ -34,16 +32,13 @@ async def _run() -> None:
         )
 
     t0 = time.perf_counter()
-    result = await generate(
-        "You are a test. Reply with exactly the word: pong.",
-        "ping",
-    )
+    result = await generate("You are a test. Reply with exactly the word: pong.", "ping")
     print(
         f"[generation] OK ({(time.perf_counter()-t0)*1000:.0f} ms) "
         f"in={result.input_tokens} out={result.output_tokens} "
         f"stop={result.stop_reason}\n  reply: {result.text!r}"
     )
-    print("\nBedrock access looks good.")
+    print("\nModels look good.")
 
 
 if __name__ == "__main__":
@@ -53,8 +48,8 @@ if __name__ == "__main__":
         print(f"\nFAILED: {type(exc).__name__}: {exc}")
         print(
             "\nCommon causes:\n"
-            "  - Model access not enabled in the Bedrock console for this region\n"
-            "  - Wrong BEDROCK_LLM_MODEL_ID (try `aws bedrock list-inference-profiles`)\n"
-            "  - Credentials/region not set (check AWS_REGION / AWS_PROFILE)\n"
+            "  - ANTHROPIC_API_KEY not set (check your .env or environment)\n"
+            "  - Wrong ANTHROPIC_MODEL id\n"
+            "  - First run still downloading the embedding model (retry once)\n"
         )
         raise SystemExit(1)

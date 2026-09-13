@@ -96,11 +96,9 @@ class KnowledgeAgent:
             steps.append(outcome.step)
             result_blocks.append(
                 {
-                    "toolResult": {
-                        "toolUseId": tu.id,
-                        "content": [{"text": outcome.result_text}],
-                        "status": "success",
-                    }
+                    "type": "tool_result",
+                    "tool_use_id": tu.id,
+                    "content": outcome.result_text,
                 }
             )
 
