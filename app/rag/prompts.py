@@ -12,6 +12,19 @@ from app.db.repository import RetrievedChunk
 # answer. We detect it downstream to set `no_answer`.
 NO_ANSWER_SENTINEL = "I don't know based on the available documents."
 
+
+def is_refusal(text: str) -> bool:
+    """True when the answer is a refusal.
+
+    We accept two shapes: the bare sentinel, and a grounded refusal that explains
+    what the documents do cover and then ends with the sentinel (for example,
+    "The docs describe medical insurance but not dental. I don't know based on the
+    available documents."). Both mean the assistant declined to answer from
+    outside the documents, so both count as a refusal, not a hallucination.
+    """
+    stripped = text.strip()
+    return stripped == NO_ANSWER_SENTINEL or stripped.endswith(NO_ANSWER_SENTINEL)
+
 SYSTEM_PROMPT = f"""You are an internal knowledge assistant for a company. \
 You answer employees' questions using ONLY the numbered source excerpts provided \
 in each request.

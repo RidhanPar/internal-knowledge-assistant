@@ -125,7 +125,7 @@ class KnowledgeAgent:
                 "used_markers": [],
             }
 
-        if final_text.strip() == rag_prompts.NO_ANSWER_SENTINEL:
+        if rag_prompts.is_refusal(final_text):
             return {"no_answer": True, "used_markers": []}
 
         markers = cited_markers(final_text, len(sources))

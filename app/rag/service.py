@@ -45,7 +45,7 @@ class RagService:
         user_prompt = prompts.build_user_prompt(question, evidence)
         result = await generate(prompts.SYSTEM_PROMPT, user_prompt)
 
-        no_answer = result.text.strip() == prompts.NO_ANSWER_SENTINEL
+        no_answer = prompts.is_refusal(result.text)
         markers = [] if no_answer else _cited_markers(result.text, len(evidence))
 
         # Map each used marker back to its source chunk. If the model answered
